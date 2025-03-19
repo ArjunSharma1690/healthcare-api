@@ -1,3 +1,0 @@
-flask
-azure-ai-textanalytics
-azure-core
