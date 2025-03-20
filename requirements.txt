@@ -3,3 +3,4 @@ azure-ai-textanalytics
 azure-core
 gunicorn
 Flask-Cors
+dotenv
