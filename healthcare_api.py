@@ -21,6 +21,7 @@ WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__)
 CORS(app)
 load_dotenv("env.env")
+
 # Azure credentials from environment variables
 ENDPOINT = os.getenv("endpoint")
 API_KEY = os.getenv("key")
@@ -33,9 +34,11 @@ if not API_KEY:
 
 client = TextAnalyticsClient(ENDPOINT, AzureKeyCredential(API_KEY))
 
+
 @app.route('/', methods=['GET'])
 def home():
     return "Healthcare API is running Fine!", 200
+
 
 @app.route('/analyze-health', methods=['POST'])
 def analyze_health():
@@ -82,6 +85,67 @@ def analyze_health():
     except Exception as e:
         logging.error(f"Error during analysis: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+# ---------- New endpoint for input2 cleaning ----------
+
+@app.route('/clean-kb-items', methods=['POST'])
+def clean_kb_items():
+    """
+    Expects payload:
+    {
+      "items": [
+        { "json": <whatever input2 node was receiving> },
+        ...
+      ]
+    }
+    Returns:
+    {
+      "items": [ <cleaned_item>, ... ]
+    }
+    """
+    try:
+        payload = request.get_json(force=True) or {}
+        items = payload.get("items", [])
+
+        cleaned_data = []
+
+        def clean_string(s):
+            if isinstance(s, str):
+                return unicodedata.normalize('NFKD', s).strip().lower()
+            return s
+
+        for item in items:
+            input_data = item.get('json')
+
+            # If input is a string, parse it as JSON
+            if isinstance(input_data, str):
+                try:
+                    input_data = json.loads(input_data)
+                except json.JSONDecodeError:
+                    continue
+
+            # Ensure input_data is a list
+            if isinstance(input_data, dict):
+                input_data = [input_data]
+
+            if isinstance(input_data, list):
+                for data in input_data:
+                    # Remove empty key-value pairs and clean values
+                    cleaned_item = {
+                        clean_string(k): clean_string(v) if isinstance(v, str) else v
+                        for k, v in data.items()
+                        if v not in [None, "", []]
+                    }
+                    cleaned_data.append(cleaned_item)
+
+        logging.debug(f"Cleaned KB items: {cleaned_data}")
+        return jsonify({"items": cleaned_data}), 200
+
+    except Exception as e:
+        logging.error(f"Error in clean_kb_items: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
