@@ -9,6 +9,7 @@ from werkzeug.serving import WSGIRequestHandler
 from dotenv import load_dotenv
 import json
 import unicodedata
+import re
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
