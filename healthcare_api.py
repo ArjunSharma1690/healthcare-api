@@ -35,7 +35,7 @@ client = TextAnalyticsClient(ENDPOINT, AzureKeyCredential(API_KEY))
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Healthcare API is running!", 200
+    return "Healthcare API is running Fine!", 200
 
 @app.route('/analyze-health', methods=['POST'])
 def analyze_health():
